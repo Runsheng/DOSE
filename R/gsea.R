@@ -40,20 +40,20 @@ GSEA_internal <- function(geneList,
     if(verbose)
         sprintf("preparing geneSet collections...")
     geneSets <- getGeneSet(USER_DATA)
-    
+
     geneSets <- sapply(geneSets, intersect, names(geneList))
 
     if (is.na(minGSSize) || is.null(minGSSize))
         minGSSize <- 0
     if (is.na(maxGSSize) || is.null(maxGSSize))
         maxGSSize <- .Machine$integer.max
-    
+
 
     gs.idx <- get_geneSet_index(geneSets, minGSSize, maxGSSize)
     nGeneSet <- sum(gs.idx)
 
     if ( nGeneSet == 0 ) {
-        msg <- paste("No gene set have size >", minGSSize, "...") 
+        msg <- paste("No gene set have size >", minGSSize, "...")
         message(msg)
         message("--> return NULL...")
         return (NULL)
@@ -74,12 +74,12 @@ GSEA_internal <- function(geneList,
     ## }
     ## if (seed) {
     ##     seeds <- sample.int(length(selected.gs))
-    ## }                         
+    ## }
     ## if(Sys.info()[1] == "Windows") {
     ##     permScores <- t(sapply(seq_along(selected.gs), function(i) {
     ##         if(verbose)
     ##             setTxtProgressBar(pb, i)
-    ##         if (seed) 
+    ##         if (seed)
     ##             set.seed(seeds[i])
     ##         perm.gseaEScore(geneList=geneList,
     ##                         geneSet=selected.gs[[i]],
@@ -90,7 +90,7 @@ GSEA_internal <- function(geneList,
     ##     permScores <- mclapply(seq_along(selected.gs), function(i) {
     ##         if(verbose)
     ##             setTxtProgressBar(pb, i)
-    ##         if (seed) 
+    ##         if (seed)
     ##             set.seed(seeds[i])
     ##         perm.gseaEScore(geneList=geneList,
     ##                         geneSet=selected.gs[[i]],
@@ -113,7 +113,7 @@ GSEA_internal <- function(geneList,
     ncores <- floor(detectCores()*.75)
     if (ncores < 1)
         ncores <- 1
-    
+
     if (Sys.info()[1] == "Windows") {
         permScores <- lapply(1:nPerm, function(i) {
             if (verbose)
@@ -124,19 +124,19 @@ GSEA_internal <- function(geneList,
         })
     } else {
         permScores <- mclapply(1:nPerm, function(i) {
-            if (verbose) 
+            if (verbose)
                 setTxtProgressBar(pb, i)
             if (seed)
                 set.seed(seeds[i])
             perm.gseaEScore2(geneList, selected.gs, exponent)
         }, mc.cores=ncores)
     }
-    
+
     permScores <- do.call("cbind", permScores)
 
     if(verbose)
         close(pb)
-    
+
     rownames(permScores) <- names(selected.gs)
 
     pos.m <- apply(permScores, 1, function(x) mean(x[x >= 0]))
@@ -150,11 +150,11 @@ GSEA_internal <- function(geneList,
         m[s==-1] <- neg.m[s==-1]
         ES/m
     }
-    
+
     NES <- normalized_ES(observedScore, pos.m, neg.m)
 
     permScores <- apply(permScores, 2, normalized_ES, pos.m=pos.m, neg.m=neg.m)
-    
+
     if (verbose)
         print("calculating p values...")
     pvals <- sapply(seq_along(observedScore), function(i) {
@@ -165,15 +165,9 @@ GSEA_internal <- function(geneList,
         } else { # NES[i] < 0
             (sum(permScores[i, ] <= NES[i]) +1) / (sum(permScores[i,] < 0) +1)
         }
-        
+
     })
     p.adj <- p.adjust(pvals, method=pAdjustMethod)
-    qobj <- qvalue(pvals, lambda=0.05, pi0.method="bootstrap")
-    if (class(qobj) == "qvalue") {
-        qvalues <- qobj$qvalues
-    } else {
-        qvalues <- NA
-    }
 
     gs.name <- names(selected.gs)
     Description <- TERM2NAME(gs.name, USER_DATA)
@@ -201,10 +195,10 @@ GSEA_internal <- function(geneList,
     res <- res[ res$p.adjust <= pvalueCutoff, ]
     idx <- order(res$pvalue, decreasing = FALSE)
     res <- res[idx, ]
-    
+
     res$ID <- as.character(res$ID)
     row.names(res) <- res$ID
-    
+
     if (verbose)
         print("done...")
 
@@ -278,7 +272,7 @@ gseaScores <- function(geneList, geneSet, exponent=1, fortify=FALSE) {
     } else {
         ES <- min.ES
     }
-    
+
     if(fortify==TRUE) {
         df <- data.frame(x=seq_along(runningES),
                          runningScore=runningES,
@@ -308,7 +302,7 @@ perm.gseaEScore <- function(geneList, geneSet, nPerm, exponent=1) {
 
 perm.gseaEScore2 <- function(geneList, geneSets, exponent=1) {
     geneList <- perm.geneList(geneList)
-    res <- sapply(1:length(geneSets), function(i) 
+    res <- sapply(1:length(geneSets), function(i)
                   gseaScores(geneSet=geneSets[[i]],
                              geneList=geneList,
                              exponent=exponent)
