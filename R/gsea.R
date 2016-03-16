@@ -168,7 +168,7 @@ GSEA_internal <- function(geneList,
 
     })
     p.adj <- p.adjust(pvals, method=pAdjustMethod)
-
+    qvalues <- NA
     gs.name <- names(selected.gs)
     Description <- TERM2NAME(gs.name, USER_DATA)
 
